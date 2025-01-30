@@ -9,6 +9,6 @@ This is demo for react+typescript web app using melco renderer library.  This de
 ```
 npm i # install npm libraries
 npm run build # Build to dist folder
-npm run server # Launch http server on dist folder
+npm run serve # Launch http server on dist folder
 
 ```
