@@ -1,0 +1,8 @@
+node_modules/
+dist/*
+!dist/index.html
+.idea/
+public/static/js/*.wasm
+build/
+.vscode/
+dist/
