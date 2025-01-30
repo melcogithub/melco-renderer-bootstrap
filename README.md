@@ -1,6 +1,6 @@
 # Melco Renderer Bootstrap
 
-This is demo for react+typescript web app using melco renderer library.  This demo can be viewed at:
+This is demo for a Pure JS example of melco renderer with < 50 lines of code and no functionality.  This demo can be viewed at:
 
 [https://melcoint.github.io/simplejs-bootstrap-demo/](https://melcoint.github.io/simplejs-bootstrap-demo/)
 
