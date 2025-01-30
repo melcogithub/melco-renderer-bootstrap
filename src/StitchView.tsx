@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useContext, useMemo, useRef } from "react";
-import {StitchCanvas } from "@melco/renderer-react-component";
 import { events, GLRenderer, RenderSceneUtil, StitchElement, Point, SelectionBoxHit, SelectionBoxUtil, ElementType, RenderScene, MatrixUtil } from "@melco/renderer";
+import StitchCanvas from './StitchCanvas'
 
 import { ElementFactory, Rectangle} from "@melco/renderer";
 import { SelectionData, UpdateType } from "@melco/renderer/dist/events";

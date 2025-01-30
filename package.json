@@ -8,13 +8,12 @@
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
-    "build-prototype": "tsc && vite build --base=/prototype/bootstrap"
+    "build-prototype": "tsc && vite build --base=/react-bootstrap-demo"
   },
   "dependencies": {
     "@emotion/react": "^11.6.0",
     "@emotion/styled": "^11.6.0",
     "@melco/renderer": "^0.3.1-1",
-    "@melco/renderer-react-component": "^0.3.0-7",
     "@mui/icons-material": "^5.4.2",
     "@mui/material": "^5.1.0",
     "immer": "^10.1.1",
