@@ -1,5 +1,6 @@
 import { ImageElement, Matrix, Point, Rectangle, RenderScene, StitchElement, Color, ThreadRenderOptions, ThreadRenderOptionsUtil, WireframeLayer, AnimationParams, ViewPortAnimationParams, WireframeType, MatrixUtil } from "@melco/renderer"
-import { SelectionData } from "@melco/renderer/dist/events"
+import { SelectionBoxHit } from "@melco/renderer"
+import { UpdateType } from "@melco/renderer/dist/events"
 
 export interface DesignDefinition {
     name: string
@@ -82,19 +83,20 @@ export interface ViewDefinition {
 }
 
 export interface DragData {
-    dragging: true
+    dragging: boolean
     drag_transformation: Matrix
+    dragHit: SelectionBoxHit
+    dragUpdateType: UpdateType
 }
 export interface SelectionDefinition {
     designSelected: boolean
     selectionRect?: Rectangle
-    internalSelectionData?: SelectionData
 }
 export interface EditorDefinition {
     editMode: boolean
     rotationMode: boolean
-    dragData?: DragData
-    selectionData?: SelectionDefinition
+    dragData: DragData
+    selectionData: SelectionDefinition
 }
 
 export interface FullState {
@@ -122,7 +124,16 @@ export const initial_state = {
     },
     edit_def: {
         editMode: false,
-        rotationMode: false
+        rotationMode: false,
+        selectionData: {
+            designSelected: false
+        },
+        dragData: {
+            dragging: false,
+            drag_transformation: MatrixUtil.identityMatrix(),
+            dragHit: SelectionBoxHit.hitNothing,
+            dragUpdateType: UpdateType.NONE
+        }
     }
 } as FullState
 

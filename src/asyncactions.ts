@@ -1,7 +1,6 @@
 import { GLRenderer, ImageElement, Matrix, MatrixUtil, StitchElement, ViewPortUtil } from "@melco/renderer"
 import { DesignDefinition, LoadStatus, ImageDefinition, FullState, SampleDesigns, SampleImages } from "./state"
 import { GenericDocumentAction, actions } from "./actions"
-import { SelectionData } from "@melco/renderer/dist/events"
 
 export async function downloadDesignAsync(renderer: GLRenderer, design_idx: number, design: DesignDefinition, dispatch: React.Dispatch<GenericDocumentAction>) {
     try {
@@ -90,8 +89,8 @@ export function ZoomToImage(renderer: GLRenderer, state: FullState, image: Image
     }
 }
 
-export async function recalcSelectionBox(renderer: GLRenderer, se: StitchElement, data: SelectionData, dispatch: React.Dispatch<GenericDocumentAction>, matrix?: Matrix) {
+export async function recalcSelectionBox(renderer: GLRenderer, se: StitchElement, dispatch: React.Dispatch<GenericDocumentAction>, matrix?: Matrix) {
     await renderer.getFactory().elementUtil.ensureElementLoaded(se)
     const r = renderer.getFactory().elementUtil.calcRectForTransform(se, matrix ? matrix : (se.matrix ? se.matrix : MatrixUtil.identityMatrix()))
-    dispatch(actions.ChangeSelection({designSelected: true, selectionRectangle: r, internalSelectionData: data})) 
+    dispatch(actions.ChangeSelectionRectangle({ selectionRectangle: r})) 
 }

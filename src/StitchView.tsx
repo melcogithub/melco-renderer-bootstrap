@@ -43,7 +43,10 @@ const StitchView = ({canvasId='canvas' }) => {
     }, [docState.view_def.animation_params])
    
     const [mouseGuestureHandler, setMouseGuestureHandler] = useState<events.EditableMouseGestureHandler | null>(null);
-  
+
+    const getDesignIdx = (scene: RenderScene) => {
+      return scene.elements.findIndex((v) => v?.type == ElementType.DESIGN)
+    }
     const configCallbacks = (m: events.EditableMouseGestureHandler, _: RendererCtxProps, factory: ElementFactory) => {
         if (m) {
          m.setViewPortUpdateFn((r: Rectangle) => {
@@ -58,34 +61,31 @@ const StitchView = ({canvasId='canvas' }) => {
             return
            }
            if (cacheScene) {
-           data.selectElems.forEach((v) => {
-              if (v.elementIndex < cacheScene.elements.length) {
-                if (cacheScene.elements[v.elementIndex]?.type == ElementType.DESIGN) {
-                  designSelected = true
-                  se = cacheScene.elements[v.elementIndex] as StitchElement
-                }
-              }
-            })
+            const didx = getDesignIdx(cacheScene)
+            if (didx >= 0) {
+              se = cacheScene.elements[didx] as StitchElement
+            }
+           }
+           if (se && data.selectElems.length > 0) {
+            designSelected = true
            }
            let currSelected = cacheDoc.edit_def.selectionData ? cacheDoc.edit_def.selectionData.designSelected : false
-           if (designSelected != currSelected) {
-            if (designSelected && ctx.renderer && se) {
-              recalcSelectionBox(ctx.renderer, se, data, dispatch)
-            } else {
-              dispatch(actions.ChangeSelection({designSelected: false, internalSelectionData: data}))
-            }
-           } else {
-              dispatch(actions.ChangeSelection({designSelected: designSelected, internalSelectionData: data}))
+           let currRotate = cacheDoc.edit_def.rotationMode
+           if (currSelected != designSelected || currRotate != data.isRotating) {
+              dispatch(actions.ChangeSelection({designSelected: designSelected, rotationMode: data.isRotating}))
            }
-           if (data.dragging) {
-            dispatch(actions.ChangeDragging({dragging: true, transformation: data.dragTransformation, internalSelectionData: data}))
-           } else if (cacheDoc.edit_def.dragData) {
-            dispatch(actions.ChangeDragging({dragging: false, internalSelectionData: data}))
+          if ((!currSelected || !cacheDoc.edit_def.dragData.dragging && data.dragging && designSelected || !cacheDoc.edit_def.selectionData.selectionRect) && designSelected && ctx.renderer && cacheDoc.product.design) {
+            recalcSelectionBox(ctx.renderer, cacheDoc.product.design, dispatch)
+          }
+           if (data.dragging && designSelected) {
+            dispatch(actions.ChangeDragging({dragging: true, dragHit: data.dragHit, updateType: data.dragUpdateType, transformation: data.dragTransformation}))
+           } else if (cacheDoc.edit_def.dragData.dragging) {
+            dispatch(actions.ChangeDragging({dragging: false, dragHit: data.dragHit, updateType: data.dragUpdateType}))
             const sed = cacheDoc.product.design
             if (ctx.renderer && sed && designSelected) {
               const mt = sed.matrix ? MatrixUtil.multiply(data.dragTransformation, sed.matrix) : data.dragTransformation
               dispatch(actions.ModifyDesign({idempotent_idx: cacheDoc.product.design_idx, designElement: {matrix: mt}}))
-              recalcSelectionBox(ctx.renderer, sed, data, dispatch, mt)
+              recalcSelectionBox(ctx.renderer, sed, dispatch, mt)
             }
            }
          });
@@ -177,17 +177,33 @@ const StitchView = ({canvasId='canvas' }) => {
     
     useEffect(() => {
         if (mouseGuestureHandler) {
-          if (docState?.edit_def.selectionData?.internalSelectionData) {
-            let designIdx = scene.elements.findIndex((v) => v?.type == ElementType.DESIGN)
-            let currSel = docState.edit_def.selectionData.internalSelectionData
-            let data = JSON.parse(JSON.stringify(currSel)) as SelectionData
-            if (data.selectElems.length > 0 && data.selectElems[0].elementIndex != designIdx) {
-              data.selectElems[0].elementIndex = designIdx
-            }
-            mouseGuestureHandler.setSelectionData(data);
+          const didx = getDesignIdx(scene)
+          const selectionData = {
+            selectElems: [],
+            dragTransformation: MatrixUtil.identityMatrix(),
+            dragging: false,
+            dragHit: SelectionBoxHit.hitNothing,
+            dragUpdateType: UpdateType.NONE,
+            isRotating: docState.edit_def.rotationMode
+          } as SelectionData
+          var isSelected = false
+          if (docState.edit_def.selectionData.designSelected && didx >= 0 && docState.product.design) {
+            isSelected = true
+            var originalMatrix = docState.product.design.matrix ? docState.product.design.matrix : MatrixUtil.identityMatrix()
+            selectionData.selectElems = [{elementIndex: didx, originalTransformation: originalMatrix}]
           }
+          if (isSelected && docState.edit_def.dragData.dragging) {
+            selectionData.dragging = true
+            selectionData.dragTransformation = docState.edit_def.dragData.drag_transformation
+            selectionData.dragHit = docState.edit_def.dragData.dragHit
+            selectionData.dragUpdateType = docState.edit_def.dragData.dragUpdateType
+          }
+          if (isSelected) {
+            selectionData.dragRect = docState.edit_def.selectionData.selectionRect
+          }
+          mouseGuestureHandler.setSelectionData(selectionData);
         }
-    }, [docState?.edit_def.selectionData, scene, mouseGuestureHandler]);
+    }, [docState.edit_def.selectionData, docState.edit_def.dragData, docState.edit_def.rotationMode, scene, mouseGuestureHandler]);
     
     return (      
         <StitchCanvas canvasId={canvasId} initCallback={initCallbackWrap} scene={scene} viewPort={viewPort} 

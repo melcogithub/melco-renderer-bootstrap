@@ -54,7 +54,7 @@ export interface CanvasProps {
 /**
  * StitchCanvas react component
  */
-const StitchCanvas = ({ canvasId = 'canvas', initCallback = (f: ElementFactory | null) => { },
+const StitchCanvas = ({ canvasId = 'canvas', initCallback = (_: ElementFactory | null) => { },
   scene = emptyScene, viewPort = emptyRect,
   renderOptions = defaultRenderOptions,
   canvasWidth = '100%', canvasHeight = '100%', wireframeLayer = undefined as (WireframeLayer | undefined),

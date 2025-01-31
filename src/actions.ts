@@ -1,7 +1,7 @@
-import { ImageElement, Matrix, MatrixUtil, Rectangle, StitchElement } from "@melco/renderer";
+import { ImageElement, Matrix, MatrixUtil, Rectangle, StitchElement, SelectionBoxHit } from "@melco/renderer";
 import { FullState, LoadStatus } from "./state";
 import { produce } from "immer";
-import { SelectionData } from "@melco/renderer/dist/events";
+import { UpdateType } from "@melco/renderer/dist/events";
 
 declare type PayloadAction<P = void, T extends string = string> = {
     payload: P;
@@ -80,78 +80,25 @@ const ViewMutator = {
             state.view_def.animation_params = undefined
         }
     },
-    ChangeSelection: (state: FullState, action: PayloadAction<{designSelected: boolean, selectionRectangle?: Rectangle, internalSelectionData?: SelectionData, rotationMode?: boolean}>) => {
-        if (action.payload.designSelected && action.payload.selectionRectangle) {
-            state.edit_def.selectionData = {
-                designSelected: true,
-                selectionRect: action.payload.selectionRectangle,
-                internalSelectionData: action.payload.internalSelectionData
-            }
-        } else if (action.payload.internalSelectionData) {
-            if (!state.edit_def.selectionData) {
-                state.edit_def.selectionData = {
-                    designSelected: false
-                }
-            }
-        }
-        if (state.edit_def.selectionData && !action.payload.designSelected) {
-            state.edit_def.selectionData.designSelected = false
-        }
-        if (action.payload.rotationMode) {
+    ChangeSelection: (state: FullState, action: PayloadAction<{designSelected: boolean, rotationMode?: boolean}>) => {
+        if (action.payload.rotationMode !== undefined) {
             state.edit_def.rotationMode = action.payload.rotationMode
         }
-        if (action.payload.internalSelectionData && state.edit_def.selectionData) {
-            state.edit_def.rotationMode = action.payload.internalSelectionData.isRotating
-            state.edit_def.selectionData.internalSelectionData = JSON.parse(JSON.stringify(action.payload.internalSelectionData)) as SelectionData
-            if (!action.payload.designSelected) {
-                state.edit_def.selectionData.internalSelectionData.selectElems = []
-                state.edit_def.selectionData.internalSelectionData.dragging = false
-            } else {
-                let selIdx = 0
-                if (state.product.image) {
-                    selIdx = 1
-                }
-                if (state.edit_def.selectionData.internalSelectionData.selectElems.length == 1) {
-                    state.edit_def.selectionData.internalSelectionData.selectElems[0].elementIndex = selIdx
-                } else if (state.product.design) {
-                    state.edit_def.selectionData.internalSelectionData.selectElems = [
-                        {
-                            elementIndex: selIdx,
-                            originalTransformation: state.product.design.matrix ? state.product.design.matrix : MatrixUtil.identityMatrix()
-                        }
-                    ]
-                }
-            }
-        }
+        state.edit_def.selectionData.designSelected = action.payload.designSelected
+    },
+    ChangeSelectionRectangle: (state: FullState, action: PayloadAction<{selectionRectangle?: Rectangle}>) => {
+        state.edit_def.selectionData.selectionRect = action.payload.selectionRectangle
     },
     DeselectAll(state: FullState, _: PayloadAction<{}>) {
-        if (state.edit_def?.selectionData) {
-            state.edit_def.dragData = undefined
-            state.edit_def.selectionData.designSelected = false
-            if (state.edit_def.selectionData.internalSelectionData) {
-                state.edit_def.selectionData.internalSelectionData.selectElems = []
-                state.edit_def.selectionData.internalSelectionData.dragging = false
-            }
-        }
+        state.edit_def.dragData.dragging = false
+        state.edit_def.selectionData.designSelected = false
+        state.edit_def.dragData.dragUpdateType = UpdateType.NONE
     },
-    ChangeDragging: (state: FullState, action: PayloadAction<{dragging: boolean, transformation?: Matrix, internalSelectionData?: SelectionData}>) => {
-        state.edit_def.dragData = action.payload.dragging ? {
-            dragging: true,
-            drag_transformation: action.payload.transformation ? action.payload.transformation : MatrixUtil.identityMatrix()
-        } : undefined
-        if (action.payload.internalSelectionData) {
-            ViewMutator.ChangeSelection(state, {type: 'temp', payload: {designSelected: action.payload.internalSelectionData.selectElems.length > 0, internalSelectionData: action.payload.internalSelectionData}})
-        }
-        if (state.edit_def.selectionData?.internalSelectionData) {
-            if (!action.payload.dragging) {
-                state.edit_def.selectionData.internalSelectionData.dragging = false
-            } else {
-                state.edit_def.selectionData.internalSelectionData.dragging = true
-                if (action.payload.transformation) {
-                    state.edit_def.selectionData.internalSelectionData.dragTransformation = action.payload.transformation
-                }
-            }
-        }
+    ChangeDragging: (state: FullState, action: PayloadAction<{dragging: boolean, dragHit: SelectionBoxHit, updateType: UpdateType, transformation?: Matrix}>) => {
+        state.edit_def.dragData.dragging = action.payload.dragging
+        state.edit_def.dragData.dragHit = action.payload.dragHit
+        state.edit_def.dragData.dragUpdateType = action.payload.updateType
+        state.edit_def.dragData.drag_transformation = action.payload.transformation ? action.payload.transformation : MatrixUtil.identityMatrix()
     }
 }
 const DocumentMutator = {
@@ -181,6 +128,7 @@ function createReducer() {
         SetEditMode: CreateActionCreator(DocumentMutator.SetEditMode),
         ChangeViewPort: CreateActionCreator(DocumentMutator.ChangeViewPort),
         ChangeSelection: CreateActionCreator(DocumentMutator.ChangeSelection),
+        ChangeSelectionRectangle: CreateActionCreator(DocumentMutator.ChangeSelectionRectangle),
         ChangeDragging: CreateActionCreator(DocumentMutator.ChangeDragging),
         DeselectAll: CreateActionCreator(DocumentMutator.DeselectAll)
     }
